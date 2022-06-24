@@ -7,17 +7,33 @@ use std::{
     ops::Deref,
 };
 
+/// Used to store the binary sizes of [`Tree`]s and [`TreeSlice`]s in bytes. This would usually be
+/// done utilizing `usize`, yet the size of `usize` is platform dependend. Since part of the appeal
+/// of a serializable tree data structure is to store it to a filesystem and load it, it seems
+/// beneficial to fix this to 64Bit on any platform to not introduce a dependency of the fileformat
+/// to the platform it has been generated on.
 pub type TreeSize = u64;
 
+/// Helpful if we want to extract a value of [`TreeSize`] out of a raw binary representation of
+/// binary slices or in calculating the size of a subtree.
 const TREE_SIZE_SIZE: usize = size_of::<TreeSize>();
 
+/// [`Tree`] is generic over the value types associated with each node. Furthermore it is also
+/// generic about the way these are serialized. E.g. A value type of `i64` could be stored in
+/// little endian, big endian or a bitpacked representation. This allows us to adapt the tree to a
+/// wide variaty of usecases.
 pub trait Node {
+    /// The value type associated with each node in the tree.
     type Value;
 
+    /// Writes the value, so [`Self::read_value`] can extract it again. In case of success the
+    /// number of bytes written is returned.
     fn write_value<W>(writer: &mut W, value: &Self::Value) -> io::Result<usize>
     where
         W: Write;
 
+    /// Reads the value from a raw binary representation. Reads the value from the back of the
+    /// passed slice.
     fn read_value(bytes: &[u8]) -> (usize, Self::Value);
 }
 
@@ -36,7 +52,7 @@ impl<N, W> TreeBuilder<N, W> {
         }
     }
 
-    pub fn add_node(&mut self, value: &N::Value, num_children: usize) -> io::Result<()>
+    pub fn write_node(&mut self, value: &N::Value, num_children: usize) -> io::Result<()>
     where
         N: Node,
         W: Write,
@@ -95,7 +111,7 @@ impl<N> TreeSlice<N> {
         unsafe { &*(ptr as *const TreeSlice<N>) }
     }
 
-    pub fn value(&self) -> (N::Value, Branches<'_, N>)
+    pub fn read_node(&self) -> (N::Value, Branches<'_, N>)
     where
         N: Node,
     {
@@ -131,7 +147,7 @@ impl<'a, N: 'a> Iterator for Branches<'a, N> {
             let tree_slice = TreeSlice::from_slice(tree_slice);
 
             // Advance iterator by assigning all bytes **not** part of the tree slice just returned.
-            self.bytes = dbg!(remainder);
+            self.bytes = remainder;
 
             Some(tree_slice)
         }

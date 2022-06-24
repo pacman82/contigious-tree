@@ -43,14 +43,16 @@ impl<N, W> TreeBuilder<N, W> {
     {
         // All previous children have been written and are immediate predecessors to this node.
         // Layout: children, value, totalsize
-        let size_value: TreeSize = N::write_value(&mut self.writer, value)?.try_into().unwrap();
+        let size_value: TreeSize = N::write_value(&mut self.writer, value)? as TreeSize;
         let size_children: TreeSize = self
             .open_node_sizes
             .drain((self.open_node_sizes.len() - num_children)..)
             .sum();
         let total_size = size_value + size_children;
         self.writer.write_all(&total_size.to_le_bytes())?;
-        self.open_node_sizes.push(total_size);
+        // We write the size, without the size of the size value itself. However, then accounting
+        // for all the childern it must of course be added.
+        self.open_node_sizes.push(total_size + TREE_SIZE_SIZE as TreeSize);
         Ok(())
     }
 }
@@ -124,9 +126,13 @@ impl<'a, N: 'a> Iterator for Branches<'a, N> {
                 [(total_size - TREE_SIZE_SIZE)..]
                 .try_into()
                 .unwrap();
-            let tree_size = TreeSize::from_le_bytes(*tree_size_bytes);
-            let tree_size: usize = tree_size.try_into().unwrap();
-            let tree_slice = TreeSlice::from_slice(&self.bytes[..total_size - tree_size - TREE_SIZE_SIZE]);
+            let tree_size = TreeSize::from_le_bytes(*tree_size_bytes) as usize;
+            let (remainder, tree_slice) = self.bytes.split_at(total_size - tree_size - TREE_SIZE_SIZE);
+            let tree_slice = TreeSlice::from_slice(tree_slice);
+
+            // Advance iterator by assigning all bytes **not** part of the tree slice just returned.
+            self.bytes = dbg!(remainder);
+
             Some(tree_slice)
         }
     }

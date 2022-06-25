@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use contigious_tree::{Node, TreeVec, TreeBuilder};
+use contigious_tree::{Node, TreeBuilder, TreeVec};
 
 #[test]
 fn leaf() {
@@ -101,7 +101,6 @@ impl Node for LeI32 {
 }
 
 /// 8 Bit unsigned integer stored in little endian byte order
-
 struct LeU8;
 
 impl Node for LeU8 {

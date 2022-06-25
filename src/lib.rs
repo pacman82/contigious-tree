@@ -58,9 +58,9 @@ impl<N, W> TreeBuilder<N, W> {
     }
 
     /// Adds a node to the tree.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// * `value`: Value associated with the node
     /// * `num_children`: This node will be the parent node of the last `num_children` nodes written
     ///   which do not have a parent yet.
@@ -80,7 +80,8 @@ impl<N, W> TreeBuilder<N, W> {
         self.writer.write_all(&total_size.to_le_bytes())?;
         // We write the size, without the size of the size value itself. However, then accounting
         // for all the childern it must of course be added.
-        self.open_node_sizes.push(total_size + TREE_SIZE_SIZE as TreeSize);
+        self.open_node_sizes
+            .push(total_size + TREE_SIZE_SIZE as TreeSize);
         Ok(())
     }
 }
@@ -162,7 +163,8 @@ impl<'a, N: 'a> Iterator for Branches<'a, N> {
                 .try_into()
                 .unwrap();
             let tree_size = TreeSize::from_le_bytes(*tree_size_bytes) as usize;
-            let (remainder, tree_slice) = self.bytes.split_at(total_size - tree_size - TREE_SIZE_SIZE);
+            let (remainder, tree_slice) =
+                self.bytes.split_at(total_size - tree_size - TREE_SIZE_SIZE);
             let tree_slice = TreeSlice::from_slice(tree_slice);
 
             // Advance iterator by assigning all bytes **not** part of the tree slice just returned.

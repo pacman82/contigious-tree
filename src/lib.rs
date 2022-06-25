@@ -37,9 +37,14 @@ pub trait Node {
     fn read_value(bytes: &[u8]) -> (usize, Self::Value);
 }
 
+/// Serializes a tree data structure in a depth first manner.
 pub struct TreeBuilder<N, W> {
+    /// Since we serialize each value of any node right away, we do not hold them as members per se.
+    /// To get the type safety still, we hold PhantomData of N
     _node_type: PhantomData<N>,
+    /// Remember the subtrees and their sizes, which are not connected to a parent node yet.
     open_node_sizes: Vec<TreeSize>,
+    /// Writer we serialize the stream into.
     writer: W,
 }
 
@@ -52,6 +57,13 @@ impl<N, W> TreeBuilder<N, W> {
         }
     }
 
+    /// Adds a node to the tree.
+    /// 
+    /// # Parameters
+    /// 
+    /// * `value`: Value associated with the node
+    /// * `num_children`: This node will be the parent node of the last `num_children` nodes written
+    ///   which do not have a parent yet.
     pub fn write_node(&mut self, value: &N::Value, num_children: usize) -> io::Result<()>
     where
         N: Node,
@@ -74,14 +86,18 @@ impl<N, W> TreeBuilder<N, W> {
 }
 
 /// An owned tree, which is stored in contigious memory. Fast traversal and query times.
-pub struct Tree<N> {
+pub struct TreeVec<N> {
     _node_type: PhantomData<N>,
     bytes: Vec<u8>,
 }
 
-impl<N> Tree<N> {
-    pub fn new(bytes: Vec<u8>) -> Tree<N> {
-        Tree {
+impl<N> TreeVec<N> {
+    /// Takes ownership of the bytes, and interprets them as a tree. No checks are performed wether
+    /// these actually describe a sensible tree. None of Rusts safety guarantees are violated if
+    /// providing 'random' bytes in this constructor. For bugfree code utilizing bytes written with
+    /// [`TreeBuilder`] is recommended, though.
+    pub fn new(bytes: Vec<u8>) -> TreeVec<N> {
+        TreeVec {
             _node_type: PhantomData,
             bytes,
         }
@@ -92,7 +108,7 @@ impl<N> Tree<N> {
     }
 }
 
-impl<N> Deref for Tree<N> {
+impl<N> Deref for TreeVec<N> {
     type Target = TreeSlice<N>;
 
     fn deref(&self) -> &Self::Target {
@@ -111,6 +127,8 @@ impl<N> TreeSlice<N> {
         unsafe { &*(ptr as *const TreeSlice<N>) }
     }
 
+    /// Deserializes the value of the root node of this silce, and returns an iterator over its
+    /// children.
     pub fn read_node(&self) -> (N::Value, Branches<'_, N>)
     where
         N: Node,
@@ -151,5 +169,50 @@ impl<'a, N: 'a> Iterator for Branches<'a, N> {
 
             Some(tree_slice)
         }
+    }
+}
+
+/// 32 Bit signed integer stored in little endian byte order
+pub struct LeI32;
+
+impl Node for LeI32 {
+    type Value = i32;
+
+    fn write_value<W>(writer: &mut W, value: &Self::Value) -> std::io::Result<usize>
+    where
+        W: Write,
+    {
+        let bytes = value.to_le_bytes();
+        writer.write_all(&bytes)?;
+        Ok(bytes.len()) // Should always be 4
+    }
+
+    fn read_value(bytes: &[u8]) -> (usize, i32) {
+        let total_len = bytes.len();
+        let last_four_bytes: &[u8; 4] = bytes[(total_len - 4)..].try_into().unwrap();
+        (4, i32::from_le_bytes(*last_four_bytes))
+    }
+}
+
+/// 8 Bit unsigned integer stored in little endian byte order
+
+pub struct LeU8;
+
+impl Node for LeU8 {
+    type Value = u8;
+
+    fn write_value<W>(writer: &mut W, value: &Self::Value) -> std::io::Result<usize>
+    where
+        W: Write,
+    {
+        let bytes = value.to_le_bytes();
+        writer.write_all(&bytes)?;
+        Ok(bytes.len()) // Should always be 1
+    }
+
+    fn read_value(bytes: &[u8]) -> (usize, u8) {
+        let total_len = bytes.len();
+        let last_four_bytes: &[u8; 1] = bytes[(total_len - 1)..].try_into().unwrap();
+        (1, u8::from_le_bytes(*last_four_bytes))
     }
 }

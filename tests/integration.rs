@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use contigious_tree::{Node, Tree, TreeBuilder};
+use contigious_tree::{Node, TreeVec, TreeBuilder};
 
 #[test]
 fn leaf() {
@@ -8,9 +8,9 @@ fn leaf() {
     let mut persistence = Vec::<u8>::new();
 
     // When
-    let mut builder = TreeBuilder::<PlainInt, _>::new(&mut persistence);
+    let mut builder = TreeBuilder::<LeI32, _>::new(&mut persistence);
     builder.write_node(&42, 0).unwrap();
-    let tree = Tree::<PlainInt>::new(persistence);
+    let tree = TreeVec::<LeI32>::new(persistence);
     let (value, mut branches) = tree.read_node();
 
     // Then
@@ -24,7 +24,7 @@ fn root_node_with_two_children() {
     let mut persistence = Vec::<u8>::new();
 
     // When
-    let mut builder = TreeBuilder::<PlainU8, _>::new(&mut persistence);
+    let mut builder = TreeBuilder::<LeU8, _>::new(&mut persistence);
     // First child
     builder.write_node(&1, 0).unwrap();
     // Second child
@@ -32,7 +32,7 @@ fn root_node_with_two_children() {
     // Parent
     builder.write_node(&3, 2).unwrap();
     // Read tree
-    let tree = Tree::<PlainU8>::new(persistence);
+    let tree = TreeVec::<LeU8>::new(persistence);
 
     // Then
     let (value, mut branches) = tree.read_node();
@@ -54,7 +54,7 @@ fn three_successive_nodes() {
     let mut persistence = Vec::<u8>::new();
 
     // When
-    let mut builder = TreeBuilder::<PlainU8, _>::new(&mut persistence);
+    let mut builder = TreeBuilder::<LeU8, _>::new(&mut persistence);
     // First child
     builder.write_node(&1, 0).unwrap();
     // Second child
@@ -62,7 +62,7 @@ fn three_successive_nodes() {
     // Parent
     builder.write_node(&3, 1).unwrap();
     // Read tree
-    let tree = Tree::<PlainU8>::new(persistence);
+    let tree = TreeVec::<LeU8>::new(persistence);
 
     // Then
     let (value, mut branches) = tree.read_node();
@@ -78,9 +78,10 @@ fn three_successive_nodes() {
     assert!(branches.next().is_none())
 }
 
-struct PlainInt;
+/// 32 Bit signed integer stored in little endian byte order
+struct LeI32;
 
-impl Node for PlainInt {
+impl Node for LeI32 {
     type Value = i32;
 
     fn write_value<W>(writer: &mut W, value: &Self::Value) -> std::io::Result<usize>
@@ -99,9 +100,11 @@ impl Node for PlainInt {
     }
 }
 
-struct PlainU8;
+/// 8 Bit unsigned integer stored in little endian byte order
 
-impl Node for PlainU8 {
+struct LeU8;
+
+impl Node for LeU8 {
     type Value = u8;
 
     fn write_value<W>(writer: &mut W, value: &Self::Value) -> std::io::Result<usize>

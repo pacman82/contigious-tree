@@ -143,6 +143,7 @@ impl<N> TreeSlice<N> {
     }
 }
 
+/// Iterates over the individual root nodes of subtrees
 pub struct Branches<'a, N> {
     _node_type: PhantomData<N>,
     bytes: &'a [u8],

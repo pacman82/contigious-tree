@@ -1,4 +1,4 @@
-#![doc = include_str!("../Readme.md")]
+//! Write and read tree graphs to and from contigious blocks of memory.
 
 use std::{
     io::{self, Write},

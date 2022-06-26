@@ -6,38 +6,54 @@
 
 Write and read tree graphs to and from contigious blocks of memory.
 
+## About
+
+A useful tree representation for situations there you want to serialize / deserialize a tree, or query it very quickly. Do not use this crate if you need to change your tree frequently. The implementation is generic over the value type associated with their nodes and their binary representation.
+
 ## Usage
 
-Consider the following tree
+Consider this tree:
 
+```
+(1) root
+ ├── (2)
+ └── (3)
+      └── (4)
+```
 
+### Writing
 
 We write trees in a depth first manner. With each subrtee written, before the parent node which owns it.
 
 ```rust
-use contigious_tree::{TreeVec, TreeBuilder, U8};
+use contigious_tree::{TreeBuilder, LeI32};
 
-// Let's write and read the following tree:
-// (1) root
-//  ├── (2)
-//  └── (3)
-//       └── (4)
+/// Value type is a singend 32 Bit integer with a little endian representation.
+type Node = LeI32;
 
 // Any io::Write, will do for writing
 let mut persistence = Vec::<u8>::new();
 
-let mut builder = TreeBuilder::<U8, _>::new(&mut persistence);
+let mut builder = TreeBuilder::<Node, _>::new(&mut persistence);
 // Build tree depth first. For each node pass a reference to the value and the number of preceding
 // direct children.
 builder.write_node(&4, 0).unwrap();
 builder.write_node(&3, 1).unwrap();
 builder.write_node(&2, 0).unwrap();
 builder.write_node(&1, 2).unwrap();
+```
 
-// ...
+### Reading
 
-// Read tree
-let tree = TreeVec::<U8>::new(persistence);
+```rust
+use contigious_tree::{TreeVec, LeI32};
+
+let persistence: Vec<u8> = { /*... load tree from stoarge ...*/};
+
+/// Value type is a singend 32 Bit integer with a little endian representation.
+type Node = LeI32;
+
+let tree = TreeVec::<Node>::new(persistence);
 // Read value of tree root, and iterate over direct children
 let (value, mut branches) = tree.read_node();
 assert_eq!(1, value);

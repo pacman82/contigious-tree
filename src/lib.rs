@@ -7,7 +7,7 @@ use std::{
     ops::Deref,
 };
 
-/// Used to store the binary sizes of [`Tree`]s and [`TreeSlice`]s in bytes. This would usually be
+/// Used to store the binary sizes of [`TreeVec`]s and [`TreeSlice`]s in bytes. This would usually be
 /// done utilizing `usize`, yet the size of `usize` is platform dependend. Since part of the appeal
 /// of a serializable tree data structure is to store it to a filesystem and load it, it seems
 /// beneficial to fix this to 64Bit on any platform to not introduce a dependency of the fileformat
@@ -18,7 +18,7 @@ pub type TreeSize = u64;
 /// binary slices or in calculating the size of a subtree.
 const TREE_SIZE_SIZE: usize = size_of::<TreeSize>();
 
-/// [`Tree`] is generic over the value types associated with each node. Furthermore it is also
+/// [`TreeVec`] is generic over the value types associated with each node. Furthermore it is also
 /// generic about the way these are serialized. E.g. A value type of `i64` could be stored in
 /// little endian, big endian or a bitpacked representation. This allows us to adapt the tree to a
 /// wide variaty of usecases.
@@ -117,6 +117,8 @@ impl<N> Deref for TreeVec<N> {
     }
 }
 
+/// Each subtree is contigious in memory and can borrowed independently similarly to a slice of
+/// bytes.
 pub struct TreeSlice<N> {
     _node_type: PhantomData<N>,
     bytes: [u8],
@@ -198,7 +200,6 @@ impl Node for LeI32 {
 }
 
 /// 8 Bit unsigned integer stored in little endian byte order
-
 pub struct LeU8;
 
 impl Node for LeU8 {

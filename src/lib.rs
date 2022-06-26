@@ -1,4 +1,4 @@
-//! Write trees to any `io::Write` depth first. Read trees into contigious blocks of memory.
+#![doc = include_str!("../Readme.md")]
 
 use std::{
     io::{self, Write},
@@ -200,9 +200,9 @@ impl Node for LeI32 {
 }
 
 /// 8 Bit unsigned integer stored in little endian byte order
-pub struct LeU8;
+pub struct U8;
 
-impl Node for LeU8 {
+impl Node for U8 {
     type Value = u8;
 
     fn write_value<W>(writer: &mut W, value: &Self::Value) -> std::io::Result<usize>

@@ -2,6 +2,19 @@
 name = "contigious-tree"
 version = "0.1.0"
 edition = "2021"
+authors = ["Markus Klein"]
+license = "MIT"
+repository = "https://github.com/pacman82/contigious-tree"
+documentation = "https://docs.rs/contigious-tree/"
+
+# A short blurb about the package. This is not rendered in any format when
+# uploaded to crates.io (aka this is not markdown).
+description = "Write and read tree graphs to and from contigious blocks of memory."
+
+# This is a list of up to five keywords that describe this crate. Keywords
+# are searchable on crates.io, and you may choose any words that would
+# help someone find this crate.
+keywords = ["tree", "graph"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -84,6 +84,16 @@ impl<N, W> TreeBuilder<N, W> {
             .push(total_size + TREE_SIZE_SIZE as TreeSize);
         Ok(())
     }
+
+    /// Call this once every node has been written. Flushes the output and returns the inner writer
+    /// in case you want to use it for something else.
+    pub fn finish(mut self) -> io::Result<W>
+    where
+        W: Write,
+    {
+        self.writer.flush()?;
+        Ok(self.writer)
+    }
 }
 
 /// An owned tree, which is stored in contigious memory. Fast traversal and query times.

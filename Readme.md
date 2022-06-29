@@ -14,7 +14,7 @@ A useful tree representation for situations there you want to serialize / deseri
 
 Consider this tree:
 
-```
+```tree
 (1) root
  ├── (2)
  └── (3)
@@ -41,6 +41,7 @@ builder.write_node(&4, 0).unwrap();
 builder.write_node(&3, 1).unwrap();
 builder.write_node(&2, 0).unwrap();
 builder.write_node(&1, 2).unwrap();
+builder.finish().unwrap();
 ```
 
 ### Reading
